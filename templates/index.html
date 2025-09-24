@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FkUSTChat</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 768px;
+            max-width: 90%;
+            height: 90%;
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 16px;
+            background-color: #4a90e2;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .controls {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .controls input,
+        .controls select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .chat {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+
+        .msg {
+            margin: 6px 0;
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .msg.user {
+            background-color: #e1f0ff;
+            color: #0056b3;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        .msg.assistant {
+            background-color: #f0f0f0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+
+        /* Markdown 样式 */
+        .msg.assistant pre {
+            background: #272822;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+
+        .msg.assistant code {
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .msg.assistant a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+
+        .msg.assistant a:hover {
+            text-decoration: underline;
+        }
+
+        .input-box {
+            display: flex;
+            padding: 12px 16px;
+            border-top: 1px solid #eee;
+            gap: 8px;
+        }
+
+        .input-box input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+            outline: none;
+        }
+
+        .input-box button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 12px;
+            background-color: #4a90e2;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .input-box button:hover {
+            background-color: #357ab8;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                height: 95%;
+                max-width: 95%;
+            }
+        }
+
+        div.think {
+            font-size: small;
+            color: #888;
+            padding-left: 8px;
+            border-left: 2px solid #aaa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">FkUSTChat</div>
+
+        <div class="controls">
+            <label for="modelSelect">选择模型：</label>
+            <select id="modelSelect"></select>
+
+            <label for="systemPrompt">系统提示（System Prompt）：</label>
+            <input id="systemPrompt" type="text" placeholder="输入自定义系统角色..." />
+        </div>
+
+        <div class="chat" id="chat"></div>
+
+        <div class="input-box">
+            <input id="inputBox" type="text" placeholder="输入消息..." />
+            <button id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const chatDiv = document.getElementById("chat");
+        const inputBox = document.getElementById("inputBox");
+        const sendBtn = document.getElementById("sendBtn");
+        const modelSelect = document.getElementById("modelSelect");
+        const systemPromptInput = document.getElementById("systemPrompt");
+
+        const message_history = [];
+
+        // 拉取模型列表
+        async function loadModels() {
+            try {
+                const resp = await fetch("/v1/models");
+                const data = await resp.json();
+                const models = data.data || [];
+                models.forEach(m => {
+                    const opt = document.createElement("option");
+                    opt.value = m.id;
+                    opt.textContent = m.show;
+                    modelSelect.appendChild(opt);
+                });
+            } catch (err) {
+                console.error(err);
+                const opt = document.createElement("option");
+                opt.value = "gpt-4o-mini";
+                opt.textContent = "gpt-4o-mini (默认)";
+                modelSelect.appendChild(opt);
+            }
+        }
+
+        // 将 Markdown 转换成 HTML
+        function renderMarkdown(text) {
+            // 把 <think>...</think> 替换成 <div class="think">...</div>，匹配最大范围
+            text = text.replace(/<think>([\s\S]*?)<\/think>/g, (_, content) => {
+                return `<div class="think">${content.trim()}</div>`;
+            });
+
+            // 简单处理代码块 ```...```
+            text = text.replace(/```(.*?)\n([\s\S]*?)```/g, (_, lang, code) => {
+                return `<pre><code>${code}</code></pre>`;
+            });
+
+            // 处理行内 `code`
+            text = text.replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`);
+
+            // 链接
+            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, txt, url) => `<a href="${url}" target="_blank">${txt}</a>`);
+
+            // 粗体 **text**
+            text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+            // 斜体 *text*
+            text = text.replace(/\*(.*?)\*/g, "<i>$1</i>");
+
+            // 换行
+            text = text.replace(/\n/g, "<br>");
+
+            return text;
+        }
+
+        function addMessage(role, text) {
+            const div = document.createElement("div");
+            div.className = `msg ${role}`;
+            div.innerHTML = role === "assistant" ? renderMarkdown(text) : text;
+            chatDiv.appendChild(div);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        function repeat(str, times) {
+            return new Array(times + 1).join(str);
+        }
+
+        let locked = false;
+
+        async function sendMessage() {
+            const text = inputBox.value.trim();
+            if (!text) return;
+            if (locked) return;
+            locked = true;
+            addMessage("user", text);
+            inputBox.value = "";
+
+            const model = modelSelect.value || "gpt-4o-mini";
+            const systemPrompt = systemPromptInput.value || "You are a helpful assistant.";
+
+            const div = document.createElement("div");
+            div.className = "msg assistant";
+            div.innerHTML = "";
+            chatDiv.appendChild(div);
+
+            message_history.push({ role: "user", content: text });
+
+            try {
+                const resp = await fetch("/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: model,
+                        stream: true,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            ...message_history
+                        ]
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    div.innerHTML = "Error: " + (err.error?.message || resp.statusText);
+                    return;
+                }
+
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+
+                let buffer = "";
+                let raw_answer = "";
+                message_history.push({ role: "assistant", content: buffer });
+                let think_deep = 0;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split("\n").filter(line => line.startsWith("data: "));
+                    for (const line of lines) {
+                        const data = line.slice(6);
+                        if (data === "[DONE]") return;
+                        try {
+                            const json = JSON.parse(data);
+                            if (!json.id) {
+                                continue;
+                            }
+                            const delta = json.choices[0].delta?.content || "";
+                            if (delta.indexOf("<think>") !== -1) think_deep++;
+                            if (delta.indexOf("</think>") !== -1) think_deep = Math.max(0, think_deep - 1);
+                            buffer += delta;
+                            const finish_reason = json.choices[0]?.finish_reason;
+                            if (think_deep === 0) {
+                                raw_answer += delta;
+                                message_history[message_history.length - 1].content = raw_answer;
+                            }
+                            div.innerHTML = renderMarkdown(buffer + repeat("</think>", think_deep));
+                            chatDiv.scrollTop = chatDiv.scrollHeight;
+                        } catch (e) {
+                            console.error(e, data);
+                        }
+                    }
+                }
+            }
+            catch (e) {
+                console.error(e);
+                div.innerHTML = "Error: " + e.message;
+            }
+            finally {
+                locked = false;
+            }
+        }
+
+        sendBtn.onclick = sendMessage;
+        inputBox.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
+
+        loadModels();
+    </script>
+
+</body>
+
+</html>

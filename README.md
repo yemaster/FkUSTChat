@@ -11,6 +11,13 @@ FkUSTChat 是一款**轻量级 AI 模型统一 API 网关应用**，旨在解决
 - **⚡ 极简开发体验** - 在 adapters 文件夹下轻松创建自定义适配器，自动加载无需配置
 - **💫 开箱即用** - 自带现代化前端聊天界面，零配置即可开始对话
 - **🛡️ 安全可靠** - 所有认证信息本地存储，完全掌控数据安全
+- **📚 丰富示例** - 提供多种编程语言的调用示例，快速上手，查看 `examples` 文件夹
+
+### 🎇项目截图
+
+![image-20251104130019226](./assets/image-20251104130019226.png)
+
+![image-20251104130047308](./assets/image-20251104130047308.png)
 
 ### 🎪 支持模型
 
@@ -21,16 +28,16 @@ FkUSTChat 是一款**轻量级 AI 模型统一 API 网关应用**，旨在解决
 
 *更多模型支持正在火热开发中... 🔥*
 
-### 🚀 快速开始
+## 🚀 快速开始
 
-#### 1. 克隆项目
+### 1. 克隆项目
 
 ```bash
 git clone https://github.com/yemaster/fkustchat
 cd fkustchat
 ```
 
-#### 2. 创建虚拟环境（推荐）
+### 2. 创建虚拟环境（推荐）
 
 ```bash
 # 创建虚拟环境
@@ -43,23 +50,32 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-#### 3. 安装依赖
+### 3. 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 4. 启动应用
+### 4. 启动应用
 
 ```bash
 python app.py
 ```
 
-🎉 恭喜！服务已启动，现在可以访问前端界面开始聊天了！
+🎉 恭喜！服务已启动在 `http://127.0.0.1:5000`，现在可以：
 
-#### 5. 使用 OpenAI API 连接
+- 访问前端界面开始聊天
+- 使用 API 进行开发集成
 
-API 地址选择 `http://127.0.0.1:5000`，API KEY 可以随便填。
+## 📚 调用示例
+
+我们提供了多种编程语言的调用示例，位于 `examples/` 文件夹中。
+
+- Python 简单 requests 调用：[/examples/simple_chat.py](/examples/simple_chat.py)
+- Python 用 openAI 库实现多轮对话：[/examples/long_chat_with_openai.py](/examples/long_chat_with_openai.py)
+- Python 简单 Agent 示例：[/example/agent.py](/example/agent.py)
+
+API 地址：`http://127.0.0.1:5000`，API KEY：可以任意填写。
 
 ### 🔧 接入器配置
 

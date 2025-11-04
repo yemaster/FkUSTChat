@@ -74,7 +74,6 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
                         if response.status_code == 200:
                             for line in response.iter_lines(decode_unicode=True):
                                 if line:
-                                    print(line)
                                     if line.startswith("data: "):
                                         line = line[6:]
                                         yield f"data: {line}\n\n"

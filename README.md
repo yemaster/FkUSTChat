@@ -4,7 +4,7 @@
 
 FkUSTChat 是一款**轻量级 AI 模型统一 API 网关应用**，旨在解决多厂商、多类型 AI 模型接口不兼容的痛点！🎯 通过智能封装不同 AI 模型的原生接口，我们对外提供**标准化、统一的 API 协议**，让开发者能够快速集成多模型能力，无需再为各模型的接口差异、参数格式或认证方式而头疼！💡
 
-- 参考博客：[https://blog.yemaster.cn/post/170](https://blog.yemaster.cn/post/170)
+- 博客链接：[https://blog.yemaster.cn/post/170](https://blog.yemaster.cn/post/170)
 
 ### ✨ 核心特色
 
@@ -23,12 +23,10 @@ FkUSTChat 是一款**轻量级 AI 模型统一 API 网关应用**，旨在解决
 
 ### 🎪 支持模型
 
-**USTC Chat 系列** (需科大账号登录)
+**USTC Chat 系列** (需科大账号登录)：要求 Windows 系统
 
 - 🤖 DeepSeek r1 - 强大的推理模型
 - 🧠 DeepSeek v3 - 最新版本，性能卓越
-
-*更多模型支持正在火热开发中... 🔥*
 
 ## 🚀 快速开始
 
@@ -67,7 +65,11 @@ python app.py
 🎉 恭喜！服务已启动在 `http://127.0.0.1:5000`，现在可以：
 
 - 访问前端界面开始聊天
-- 使用 API 进行开发集成
+- 使用 API 进行开发集成。API 地址：`http://127.0.0.1:5000`，API KEY：可以任意填写。
+
+### 5. 配置认证身份信息
+
+但是此时还是不能使用 USTC Chat 相关的模型。我们首先切换 USTC Chat 相关模型：USTC Deepseek r1 或 USTC Deepseek v3，随便输入点什么消息发送，会提示：`USTC Chat 适配器需要你的科大账号和密码才能登录，请在 ./config 文件中编辑`，这时候会在项目根目录下创建 `config` 文件，格式为 JSON 格式，编辑其中内容，将 username 和 password 设置为 USTC 的统一身份认证账号密码即可。
 
 ## 📚 调用示例
 
@@ -85,30 +87,6 @@ API 地址：`http://127.0.0.1:5000`，API KEY：可以任意填写。
 
 - ✅ **启用**：将适配器文件放入 `adapters/` 文件夹
 - ❌ **禁用**：将文件移至 `disabled_adapters/` 文件夹
-
-#### USTC Chat 配置指南
-
-**系统要求**
-
-- 仅支持 Windows（目前只自带 Windows 的 Edge 驱动）
-- 安装有 Microsoft Edge
-
-**使用指南**
-
-1. **首次启动**：选择 USTC Chat 模型（USTC Deepseek r1 或 USTC Deepseek v3）尝试对话。此时系统将会报错：`USTC Chat 适配器需要你的科大账号和密码才能登录，请在 ./config 文件中编辑`。此时关闭退出程序。
-
-2. **配置认证**：按照提示编辑 `./config` 文件。保存并重启程序即可使用对话。
-
-   ```
-   username = 你的学号
-   password = 你的密码
-   ```
-
- > 🔒 **安全提示**：所有认证信息**仅存储**在本地，启动的也是本地 Edge 浏览器，代码完全开源可审查，请放心使用！
-
-- 当需要登录时，系统会自动打开浏览器完成认证流程。
-
-- 首次使用可能需要二次认证，勾选信任设备即可。
 
 ### 🛠️ 开发者指南
 

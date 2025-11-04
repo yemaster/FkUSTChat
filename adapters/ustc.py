@@ -225,6 +225,25 @@ class USTC_Adapter(FkUSTChat_BaseAdapter):
             "fool": USTC_FOOL_Model(self)
         }
 
+    def configure_format(self):
+        return {
+            "username": {
+                "type": "string",
+                "description": "USTC 统一身份认证用户名",
+                "required": True
+            },
+            "password": {
+                "type": "string",
+                "description": "USTC 统一身份认证密码",
+                "required": True
+            },
+            "credentials": {
+                "type": "string",
+                "description": "自动获取的 Credential，无需手动填写",
+                "required": False
+            }
+        }
+
 
     def is_login(self):
         credentials = self.config.get('credentials', 'none')
@@ -309,10 +328,10 @@ class USTC_Adapter(FkUSTChat_BaseAdapter):
 
     def get_credentials(self):
         if not self.is_login():
-            # print(self.config)
+            print(self.config)
             username = self.config.get('username')
             password = self.config.get('password')
-            # print(username, password)
+            print(username, password)
             if not username or not password or username == 'PB********' or password == 'PASSWORD HERE':
                 self.set_config('username', 'PB********')
                 self.set_config('password', 'PASSWORD HERE')

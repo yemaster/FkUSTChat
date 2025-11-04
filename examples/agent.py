@@ -22,13 +22,12 @@ SYSTEM_PROMPT = f'''
 
 ## 工作流程
 1. 使用 get_request 工具获取用户的要求
-2. 使用 think 工具进行思考，分析提取用户的核心要求
+2. 使用 think 工具进行思考，分析提取用户的核心要求，分点列举
 3. 使用 gen_expression 工具将用户要求转化为 Python 表达式
 4. 使用 calc 工具给 Python 表达式求值
-5. 如果出现错误，尝试使用 gen_expression 重新修正或者生成 Python 表达式或者重新用 think 工具思考。如果没有错误，直接跳到第6步，用 task_done 汇报结果。
-6. 用 task_done 工具汇报你的结果，包含你的理解和计算结果。
+5. 使用 think 进行思考，全部任务是否正确完成没有出错？是否还有剩余任务没有完成？继续用 gen_expression 工具完成剩余的任务。当你认为全部任务都完成后，用 task_done 工具给出你的答案以及求解过程。
 
-每一步都必须使用对应的工具调用，一定要严格按照要求来！
+每一步都必须使用对应的工具调用，一定要严格按照要求来！注意，只有你调用 task_done 工具之后，才会结束！你的结果必须使用 task_done 来告诉用户。
 '''.strip()
 
 USER_PROMPT = "加油干活吧，记得严格按照要求，每一步都必须使用对应的工具调用"
@@ -217,7 +216,7 @@ class SafePythonEvaluator:
                     for func in cls.ALLOWED_BUILTINS['datetime']
                     if hasattr(datetime, func)
                 })
-            return eval(expr, safe_globals)
+            return f"Result: {eval(expr, safe_globals)}"
         except Exception as e:
             return f"Error: {e}"
 
@@ -230,7 +229,7 @@ async def get_response(**kwargs):
 
 async def gen_expression(content):
     msgs = [
-        {'role': 'system', 'content': "你是一个 Python 表达式转换助手，用于将用户命令转换为能够直接执行求值的 Python 表达式。你转换的 Python 表达式必须是纯表达式，不能是语句。仅支持数学计算、字符串处理、列表/字典操作、日期计算等，可使用math模块（如math.pi、math.sqrt）和datetime模块的常用函数，禁止执行：文件操作、网络请求、系统命令、模块导入等危险操作。如果你认为你无法处理转换操作，请返回一个字符串，内容为你的理由。你的返回结果必须只能包含 Python 表达式，不要输出其他任何多余的字符，只输出表达式即可！"},
+        {'role': 'system', 'content': "你是一个 Python 表达式转换助手，用于将用户命令转换为能够直接用 eval 执行的单个 Python 表达式。你转换的 Python 表达式必须是纯表达式，不能是语句。仅支持数学计算、字符串处理、列表/字典操作、日期计算等，可使用math模块（如math.pi、math.sqrt）和datetime模块的常用函数，math库和datetime库已经导入，禁止执行：文件操作、网络请求、系统命令、模块导入等危险操作。如果你认为你无法处理转换操作，请返回一个字符串，内容为你的理由。你的返回结果必须只能包含单行 Python 表达式，不要输出其他任何多余的字符，只输出表达式即可！"},
         {'role': 'user', 'content': f"帮我把如下内容转换为 Python 表达式：\n{content}"},
     ]
     resp = await get_response(messages=msgs, max_tokens=300, temperature=0, n=1, seed=6)
@@ -257,24 +256,25 @@ async def parse_tool_output(tool_call, webpage_content, alerts):
         alerts.append('Agent 读取了用户要求')
         return response(f'以下是用户要求：\n<content>\n{webpage_content}\n</content>')
     elif tool_name=='think':
-        alerts.append('Agent 进行了思考')
+        thought = tool_args['thought']
+        alerts.append(f'Agent 思考了 {thought}')
         return response('继续。')
     elif tool_name=='gen_expression':
         content = tool_args['content']
-        alerts.append(f'Agent 对 {content} 进行了转换')
         exp = await gen_expression(content)
+        alerts.append(f'Agent 对 {content} 进行了转换，得到表达式 {exp}')
         return response(exp)
     elif tool_name=='calc':
         exp = tool_args['exp']
-        alerts.append(f'Agent 对 {exp} 进行了求值')
         res = SafePythonEvaluator().execute(exp)
+        alerts.append(f'Agent 对 {exp} 进行了求值，得到结果 {res}')
         return response(res)
     elif tool_name=='task_done':
         alerts.append(f'Agent 完成了任务')
         alerts.append(tool_args.get('summary', '???'))
         return
     else:
-        alerts.append('Agent 错误：工具不存在')
+        alerts.append(f'Agent 错误：工具 {tool_name} 不存在')
         return
     
 async def run_llm(webpage_content):

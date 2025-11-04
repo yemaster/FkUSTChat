@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, Response
+import sys
 
 from libs.core import FkUSTChat_Core
 from libs.adapter_loader import load_adapter 
@@ -85,4 +86,9 @@ def chat_completions():
 
 if __name__ == '__main__':
     print(load_adapter(core, 'ustc'))
-    app.run(host='0.0.0.0', debug=True)
+    if len(sys.argv) > 0:
+        try:
+            port = int(sys.argv[1])
+        except Exception as e:
+            port = 5000
+    app.run(host='0.0.0.0', port=port, debug=True)

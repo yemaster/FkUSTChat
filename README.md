@@ -1,4 +1,4 @@
-# FkUSTChat 🚀
+# FkUSTChat 🚀：Flexible & Keystone USTC Chat
 
 ### 项目简介
 

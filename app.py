@@ -54,6 +54,7 @@ def chat_completions():
     with_search = data.get("with_search", False)
     model = data.get("model", "__USTC_Adapter__deepseek-r1")
     messages = data.get("messages", [])
+    tools = data.get("tools", [])
 
     if model not in core.models:
         return jsonify({
@@ -66,7 +67,7 @@ def chat_completions():
         }), 400
     
     try:
-        response = core.models[model].get_response(messages, stream=stream, with_search=with_search)
+        response = core.models[model].get_response(messages, stream=stream, with_search=with_search, tools=tools)
         if stream:
             return Response(response, content_type='text/event-stream')
         else:

@@ -45,6 +45,7 @@ class FkUSTChat_BaseModel:
         self.name = model_info.get('name', 'FkUSTChat_BaseModel')
         self.description = model_info.get('description', 'Base Model for FkUSTChat')
         self.author = model_info.get('author', 'yemaster')
+        self.allow_tool = False
     
     def get_response(self, prompt):
         """

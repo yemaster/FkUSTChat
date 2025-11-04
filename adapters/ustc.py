@@ -28,7 +28,7 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
 
         self.model = model
 
-    def get_response(self, prompt, stream=False, with_search=False):
+    def get_response(self, prompt, stream=False, with_search=False, tools=[]):
         credentials = self.adapter.get_credentials()
         queue_code = self.adapter.enter_queue()
 
@@ -62,8 +62,10 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
             'queue_code': queue_code,
             'model': self.model,
             'stream': True,
-            'with_search': with_search,
+            'with_search': with_search
         }
+        if self.allow_tool and len(tools):
+            json_data["tools"] = tools
 
         if stream:
             def generate():
@@ -72,6 +74,7 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
                         if response.status_code == 200:
                             for line in response.iter_lines(decode_unicode=True):
                                 if line:
+                                    print(line)
                                     if line.startswith("data: "):
                                         line = line[6:]
                                         yield f"data: {line}\n\n"
@@ -87,25 +90,71 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
                     if response.status_code == 200:
                         answer_id = ""
                         answer = ""
+                        tool_calls = {}  # 用字典暂存，key=index
+                        final_tool_calls = []  # 最终合并后的结果
+
                         for line in response.iter_lines(decode_unicode=True):
-                            if line:
-                                if line.startswith("data: "):
-                                    line = line[6:]
-                                    try:
-                                        data = json.loads(line)
-                                        object_type = data.get('object', '')
-                                        if object_type == 'chat.completion.chunk':
-                                            new_content = data.get('choices', [{}])[0].get('delta', {}).get('content', '')
-                                            if isinstance(new_content, str):
-                                                answer += new_content
-                                                # print(new_content, end='', flush=True)
-                                    except Exception as e:
-                                        pass
-                                    if "id" in data:
-                                        answer_id = data.get('id', '')
-                                if line == "[DONE]":
+                            if not line:
+                                continue
+                            if line.startswith("data: "):
+                                line = line[6:]
+                                if line.strip() == "[DONE]":
                                     break
-                        return {
+
+                                try:
+                                    data = json.loads(line)
+                                except Exception:
+                                    continue
+
+                                if "id" in data:
+                                    answer_id = data.get("id", "")
+
+                                if data.get("object") != "chat.completion.chunk":
+                                    continue
+
+                                choice = data.get("choices", [{}])[0]
+                                delta = choice.get("delta", {})
+                                finish_reason = choice.get("finish_reason")
+
+                                if "content" in delta:
+                                    answer += delta["content"]
+
+                                if "tool_calls" in delta:
+                                    for tc in delta["tool_calls"]:
+                                        index = tc.get("index", 0)
+                                        # 初始化对应 index 的 tool_call
+                                        if index not in tool_calls:
+                                            tool_calls[index] = {
+                                                "id": tc.get("id"),
+                                                "type": tc.get("type"),
+                                                "function": {
+                                                    "name": tc.get("function", {}).get("name", ""),
+                                                    "arguments": "",
+                                                },
+                                            }
+
+                                        # 累积 arguments
+                                        func = tc.get("function", {})
+                                        if "arguments" in func:
+                                            tool_calls[index]["function"]["arguments"] += func["arguments"]
+
+                                if finish_reason in ("stop", "tool_calls"):
+                                    # 将字典转为按 index 排序的列表
+                                    final_tool_calls = [tool_calls[i] for i in sorted(tool_calls.keys())]
+                                    break
+
+                            elif line.strip() == "[DONE]":
+                                break
+                            
+                        message = {
+                            "role": "assistant",
+                            "content": answer
+                        }
+                        
+                        if final_tool_calls:
+                            message["tool_calls"] = final_tool_calls
+
+                        result = {
                             "id": answer_id,
                             "object": "chat.completion",
                             "created": int(time.time()),
@@ -113,14 +162,14 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
                             "choices": [
                                 {
                                     "index": 0,
-                                    "message": {
-                                        "role": "assistant",
-                                        "content": answer
-                                    },
-                                    "finish_reason": "stop"
+                                    "message": message,
+                                    "finish_reason": "stop" if not final_tool_calls else "tool_calls"
                                 }
                             ]
                         }
+                        # print(result)
+                        return result
+
                     else:
                         print(f"Request failed with status code {response.status_code}, text {response.text}, retrying in 3 seconds...")
                         time.sleep(3)
@@ -143,6 +192,7 @@ class USTC_DeepSeek_V3_Model(USTC_Base_Model):
             "description": "USTC DeepSeek-r1 Model for FkUSTChat",
             "author": "yemaster"
         })
+        self.allow_tool = True
 
 class USTC_FOOL_Model(USTC_Base_Model):
     def __init__(self, adapter):

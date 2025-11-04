@@ -1,6 +1,7 @@
 __pycache__/
 app.build/
 app.dist/
+app.onefile-build/
 dist/
 config
 test.py

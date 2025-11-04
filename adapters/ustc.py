@@ -3,11 +3,13 @@ import time
 import random
 import json
 from os import path
+import sys
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 from adapters.base import FkUSTChat_BaseAdapter, FkUSTChat_BaseModel
 
@@ -282,9 +284,19 @@ class USTC_Adapter(FkUSTChat_BaseAdapter):
         return False
 
     def do_login(self, username, password):
-        options = webdriver.EdgeOptions()
-        service = webdriver.EdgeService(executable_path=path.join(path.dirname(__file__), "../dependencies/msedgedriver.exe"))
-        driver = webdriver.Edge(service=service, options=options)
+        if sys.platform.startswith('win32'):
+            try:
+                edge_driver_path = EdgeChromiumDriverManager().install()
+            except:
+                edge_driver_path = path.join(path.dirname(__file__), "../dependencies/msedgedriver.exe")
+            options = webdriver.EdgeOptions()
+            service = webdriver.EdgeService(executable_path=edge_driver_path)
+            driver = webdriver.Edge(service=service, options=options)
+        elif sys.platform.startswith('darwin'):
+            driver = webdriver.Safari()
+        else:
+            raise SystemError("Unsupported OS.")
+        
         driver.maximize_window()
 
         driver.get("https://id.ustc.edu.cn/cas/login?service=https:%2F%2Fchat.ustc.edu.cn%2Fustchat%2F")

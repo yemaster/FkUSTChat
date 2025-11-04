@@ -23,12 +23,26 @@ FkUSTChat 是一款**轻量级 AI 模型统一 API 网关应用**，旨在解决
 
 ### 🎪 支持模型
 
-**USTC Chat 系列** (需科大账号登录)：要求 Windows 系统
+**USTC Chat 系列** (需科大账号登录)
 
 - 🤖 DeepSeek r1 - 强大的推理模型
 - 🧠 DeepSeek v3 - 最新版本，性能卓越
 
 ## 🚀 快速开始
+
+### 系统要求
+
+#### Windows 系统
+
+- 需要安装 Microsoft Edge 浏览器
+
+#### Mac OS 系统
+
+- 需要用以下命令启动 SafariDriver:
+  
+  ```bash
+  safaridriver --enable
+  ```
 
 ### 1. 克隆项目
 

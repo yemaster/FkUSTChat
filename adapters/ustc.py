@@ -69,12 +69,15 @@ class USTC_Base_Model(FkUSTChat_BaseModel):
         if self.allow_tool and len(tools):
             json_data["tools"] = tools
 
+        # print(f'[+] Deal with Chat: {prompt}')
+
         if stream:
             def generate():
                 while True:
                     with requests.post('https://chat.ustc.edu.cn/ms-api/chat-messages', cookies=cookies, headers=headers, json=json_data, stream=True) as response:
                         if response.status_code == 200:
                             for line in response.iter_lines(decode_unicode=True):
+                                # print(line)
                                 if line:
                                     if line.startswith("data: "):
                                         line = line[6:]

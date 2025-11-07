@@ -15,6 +15,10 @@ FkUSTChat 是一款**轻量级 AI 模型统一 API 网关应用**，旨在解决
 - **🛡️ 安全可靠** - 所有认证信息本地存储，完全掌控数据安全
 - **📚 丰富示例** - 提供多种编程语言的调用示例，快速上手，查看 `examples` 文件夹
 
+> [!Warning]
+>
+> 该项目仍然在测试中，不稳定，可能会出现错误。有问题请提交 Issue。
+
 ### 🎇项目截图
 
 ![image-20251104130019226](./assets/image-20251104130019226.png)
@@ -87,6 +91,20 @@ python app.py
 
 ## 📚 调用示例
 
+### Claude Code 调用
+
+配置环境变量：
+
+```env
+ANTHROPIC_BASE_URL=http://127.0.0.1:5000/
+ANTHROPIC_AUTH_TOKEN=a-random-string
+ANTHROPIC_MODEL=__USTC_Adapter__deepseek-v3
+```
+
+然后启动 `claude` 即可。
+
+### 代码调用
+
 我们提供了多种编程语言的调用示例，位于 `examples/` 文件夹中。
 
 - Python 简单 requests 调用：[/examples/simple_chat.py](/examples/simple_chat.py)
@@ -120,6 +138,7 @@ TODO
 
 ### 📝 更新日志
 
+- **v1.1.0** 🎉 新增兼容 Claude Code 的 API
 - **v1.0.1** 🎉 为 USTC Chat 支持 Tool Calls
 - **v1.0.0** 🎉 初始版本发布，支持 USTC Chat 系列模型
 - 更多功能正在开发中...
